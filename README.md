@@ -340,15 +340,7 @@ For bug reports, feature requests, or collaboration.
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-**What this means:**
-- ✅ Free for personal and commercial use
-- ✅ Can modify and distribute
-- ✅ No warranty provided
-- ️ Include original copyright notice
-
----
+MIT LICENSE
 
 ##  Acknowledgments
 
