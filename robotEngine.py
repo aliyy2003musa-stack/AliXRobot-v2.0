@@ -13,6 +13,11 @@ from robotControl_logic import (
     parse_numbers,
     transform_point,
 )
+from profiles import (
+    interpolate_path,
+    validate_profile,
+    validate_steps,
+)
 
 
 class RobotEngine:
@@ -215,32 +220,38 @@ class RobotEngine:
         steps: int = 50,
     ) -> list[list[float]]:
         """
-        Generate a smooth path between original and transformed positions.
-        Profiles: 'linear', 'trapezoidal' (smooth accel/decel), 's_curve' (ultra-smooth).
+        Generate a path from the original to the transformed position.
+
+        Profiles: 'linear', 'smoothstep', 's_curve', 'trapezoidal'.
+        The first point is exactly the original position and the last is
+        exactly the transformed position. Points are snapshots at equal
+        time intervals, not equally spaced waypoints.
+
+        Raises
+        ------
+        ValueError
+            Unknown profile, or steps is not an integer >= 2.
+        RuntimeError
+            Robot not configured, or no transformation applied yet.
         """
-        if self.position is None or self.transformed_position is None:
-            return []
-            
-        path = []
-        for i in range(steps):
-            t = i / (steps - 1) if steps > 1 else 0.0
-            
-            # Apply velocity profile shaping
-            if profile == "trapezoidal":
-                # Simple ease-in-out
-                t = t * t * (3 - 2 * t)
-            elif profile == "s_curve":
-                # Smoother quintic ease-in-out
-                t = t * t * t * (t * (t * 6 - 15) + 10)
-                
-            # Interpolate coordinates
-            point = [
-                self.position[dim] + (self.transformed_position[dim] - self.position[dim]) * t
-                for dim in range(self.dimension)
-            ]
-            path.append(point)
-            
-        return path
+        validate_profile(profile)
+        validate_steps(steps)
+
+        if self.dimension is None or self.position is None:
+            raise RuntimeError(
+                "Robot must be configured before generating a trajectory."
+            )
+        if self.transformed_position is None:
+            raise RuntimeError(
+                "Apply a transformation before generating a trajectory."
+            )
+
+        return interpolate_path(
+            self.position,
+            self.transformed_position,
+            steps,
+            profile,
+        )
 
     # =====================================================
     # V2.0: WORKSPACE CALCULATOR

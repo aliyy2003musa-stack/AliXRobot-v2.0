@@ -17,6 +17,8 @@ import math
 from dataclasses import dataclass
 from typing import Sequence, Optional
 
+from profiles import interpolate_path
+
 # ============================================================
 # TYPES
 # ============================================================
@@ -373,31 +375,25 @@ def create_advanced_path(
     profile: str = "linear",
 ) -> list[Point3D]:
     """
-    Generate a path with specific velocity profiles.
-    Profiles: 'linear', 'trapezoidal' (smooth accel/decel), 's_curve' (ultra-smooth).
+    Generate a 3D path from start to end shaped by a motion profile.
+
+    Profiles: 'linear', 'smoothstep', 's_curve', 'trapezoidal'.
+    The first point is exactly start and the last is exactly end.
+    Points are snapshots at equal time intervals, not equally spaced
+    in space.
+
+    Raises ValueError for an unknown profile, samples < 2, or
+    start/end of different dimensions.
     """
     if len(start) != len(end):
         raise ValueError("Start and end points must have the same dimension.")
-    
-    start_3d = to_3d(start)
-    end_3d = to_3d(end)
-    result = []
-    
-    for i in range(samples):
-        t = i / (samples - 1) if samples > 1 else 0.0
-        
-        # Apply velocity profile shaping
-        if profile == "trapezoidal":
-            t = t * t * (3 - 2 * t) # Smooth ease-in-out
-        elif profile == "s_curve":
-            t = t * t * t * (t * (t * 6 - 15) + 10) # Quintic ease-in-out
-            
-        x = start_3d[0] + t * (end_3d[0] - start_3d[0])
-        y = start_3d[1] + t * (end_3d[1] - start_3d[1])
-        z = start_3d[2] + t * (end_3d[2] - start_3d[2])
-        result.append((x, y, z))
-        
-    return result
+    path = interpolate_path(
+        to_3d(start),
+        to_3d(end),
+        samples,
+        profile,
+    )
+    return [(p[0], p[1], p[2]) for p in path]
 
 # ============================================================
 # V2.0: WORKSPACE GRID GENERATOR
